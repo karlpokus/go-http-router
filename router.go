@@ -13,12 +13,13 @@ type route struct {
 	Handler http.Handler
 }
 
+// ServeHTTP calls the matching handler for the url path
 func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rtr.find(r.URL.Path).ServeHTTP(w, r)
 }
 
 // find returns a handler matching the path
-// if no match returns a default 404 handler
+// if no match - returns a default 404 handler
 func (rtr *router) find(path string) http.Handler {
 	for _, r := range rtr.routes {
 		if r.Path == path {
