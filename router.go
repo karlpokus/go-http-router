@@ -9,8 +9,8 @@ type router struct {
 }
 
 type route struct {
-	Path    string
-	Handler http.Handler
+	path    string
+	handler http.Handler
 }
 
 // ServeHTTP calls the matching handler for the url path
@@ -22,8 +22,8 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // if no match - returns a default 404 handler
 func (rtr *router) find(path string) http.Handler {
 	for _, r := range rtr.routes {
-		if r.Path == path {
-			return r.Handler
+		if r.path == path {
+			return r.handler
 		}
 	}
 	return http.HandlerFunc(fourofour)
@@ -31,10 +31,7 @@ func (rtr *router) find(path string) http.Handler {
 
 // Handler adds a http.Handler to a path
 func (rtr *router) Handler(path string, handler http.Handler) {
-	rtr.routes = append(rtr.routes, route{
-		Path:    path,
-		Handler: handler,
-	})
+	rtr.routes = append(rtr.routes, route{path, handler})
 }
 
 // New returns a router
