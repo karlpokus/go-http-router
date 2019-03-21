@@ -21,7 +21,7 @@ var testTable = []struct {
 }
 
 func TestRouter(t *testing.T) {
-	var r = New()
+	r := New()
 	r.Handler("/", http.HandlerFunc(foo))
 
 	for _, tt := range testTable {
@@ -37,5 +37,15 @@ func TestRouter(t *testing.T) {
 		if string(body) != tt.body {
 			t.Errorf("body err: want %s, got %s", tt.body, string(body))
 		}
+	}
+}
+
+func BenchmarkRouter(b *testing.B) {
+	r := New()
+	req := httptest.NewRequest("GET", "/", nil)
+	//w := ioutil.Discard
+	w := httptest.NewRecorder()
+	for n := 0; n < b.N; n++ {
+		r.ServeHTTP(w, req)
 	}
 }
