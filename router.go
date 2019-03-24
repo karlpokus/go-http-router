@@ -6,6 +6,7 @@ import (
 
 type router struct {
 	routes []route
+	notFound http.Handler
 }
 
 type route struct {
@@ -26,7 +27,7 @@ func (rtr *router) find(path string) http.Handler {
 			return r.handler
 		}
 	}
-	return http.HandlerFunc(fourofour)
+	return rtr.notFound
 }
 
 // Handler adds a http.Handler to a path
@@ -36,10 +37,12 @@ func (rtr *router) Handler(path string, handler http.Handler) {
 
 // New returns a router
 func New() *router {
-	return &router{}
+	return &router{
+		notFound: http.HandlerFunc(notFound),
+	}
 }
 
-// fourofour is the default 404 response
-func fourofour(w http.ResponseWriter, r *http.Request) {
+// notFound is the default 404 response
+func notFound(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(404), 404)
 }
