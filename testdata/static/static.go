@@ -1,4 +1,4 @@
-package staticroutes
+package static
 
 type route struct {
 	Method, Path string
