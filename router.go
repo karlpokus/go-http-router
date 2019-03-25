@@ -4,9 +4,12 @@ import (
 	"net/http"
 )
 
+type routes map[string][]route
+
 type router struct {
-	routes []route
-	notFound http.Handler
+	notFound         http.Handler
+	methodNotAllowed http.Handler
+	routes
 }
 
 type route struct {
@@ -14,15 +17,19 @@ type route struct {
 	handler http.Handler
 }
 
-// ServeHTTP calls the matching handler for the url path
+// ServeHTTP calls the matched handler
 func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	rtr.find(r.URL.Path).ServeHTTP(w, r)
+	rtr.find(r.Method, r.URL.Path).ServeHTTP(w, r)
 }
 
-// find returns a handler matching the path
-// if no match - returns a default 404 handler
-func (rtr *router) find(path string) http.Handler {
-	for _, r := range rtr.routes {
+// find returns a handler matching the method and path
+// returns a default error handler if no match
+func (rtr *router) find(method, path string) http.Handler {
+	methKey, ok := rtr.routes[method]
+	if !ok {
+		return rtr.methodNotAllowed
+	}
+	for _, r := range methKey {
 		if r.path == path {
 			return r.handler
 		}
@@ -30,19 +37,26 @@ func (rtr *router) find(path string) http.Handler {
 	return rtr.notFound
 }
 
-// Handler adds a http.Handler to a path
-func (rtr *router) Handler(path string, handler http.Handler) {
-	rtr.routes = append(rtr.routes, route{path, handler})
+// Handler adds a http.Handler to a http method and path
+func (rtr *router) Handler(method, path string, handler http.Handler) {
+	rtr.routes[method] = append(rtr.routes[method], route{path, handler})
 }
 
 // New returns a router
 func New() *router {
 	return &router{
-		notFound: http.HandlerFunc(notFound),
+		notFound:         http.HandlerFunc(notFound),
+		methodNotAllowed: http.HandlerFunc(methodNotAllowed),
+		routes:           make(routes),
 	}
 }
 
 // notFound is the default 404 response
 func notFound(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(404), 404)
+}
+
+// methodNotAllowed is the default 405 response
+func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, http.StatusText(405), 405)
 }

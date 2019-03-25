@@ -12,20 +12,22 @@ func foo(w http.ResponseWriter, r *http.Request) {
 }
 
 var testTable = []struct {
+	method string
 	path   string
 	status int
 	body   string
 }{
-	{"/", 200, "foo"},
-	{"/missing", 404, "Not Found\n"},
+	{"GET", "/", 200, "foo"},
+	{"POST", "/", 405, "Method Not Allowed\n"},
+	{"GET", "/missing", 404, "Not Found\n"},
 }
 
 func TestRouter(t *testing.T) {
 	r := New()
-	r.Handler("/", http.HandlerFunc(foo))
+	r.Handler("GET", "/", http.HandlerFunc(foo))
 
 	for _, tt := range testTable {
-		req := httptest.NewRequest("GET", tt.path, nil)
+		req := httptest.NewRequest(tt.method, tt.path, nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 		res := w.Result()
@@ -40,12 +42,16 @@ func TestRouter(t *testing.T) {
 	}
 }
 
+var benchRes http.Handler // avoiding compiler optimisations
+
 func BenchmarkRouter(b *testing.B) {
+	var res http.Handler
 	r := New()
-	req := httptest.NewRequest("GET", "/", nil)
-	//w := ioutil.Discard
-	w := httptest.NewRecorder()
+	foo := http.HandlerFunc(foo)
+	r.Handler("GET", "/", foo)
 	for n := 0; n < b.N; n++ {
-		r.ServeHTTP(w, req)
+		//r.ServeHTTP(w, req)
+		res = r.find("GET", "/missing")
 	}
+	benchRes = res
 }
